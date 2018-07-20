@@ -1,5 +1,7 @@
 package us.myles.ViaVersion.protocols.protocol1_13to1_12_2;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.chat.ComponentSerializer;
 import us.myles.ViaVersion.api.PacketWrapper;
@@ -26,6 +28,7 @@ import us.myles.ViaVersion.protocols.protocol1_13to1_12_2.storage.BlockStorage;
 import us.myles.ViaVersion.protocols.protocol1_13to1_12_2.storage.EntityTracker;
 import us.myles.ViaVersion.protocols.protocol1_13to1_12_2.storage.TabCompleteTracker;
 import us.myles.ViaVersion.protocols.protocol1_13to1_12_2.types.Particle1_13Type;
+import us.myles.ViaVersion.util.GsonUtil;
 
 import java.util.Map;
 
@@ -115,6 +118,29 @@ public class Protocol1_13To1_12_2 extends Protocol {
         InventoryPackets.register(this);
 
         // Outgoing packets
+
+        // Status
+        registerOutgoing(State.STATUS, 0x00, 0x00, new PacketRemapper() {
+            @Override
+            public void registerMap() {
+                map(Type.STRING);
+                handler(new PacketHandler() {
+                    @Override
+                    public void handle(PacketWrapper wrapper) throws Exception {
+                        String response = wrapper.get(Type.STRING, 0);
+                        try {
+                            JsonObject json = GsonUtil.getGson().fromJson(response, JsonObject.class);
+                            if (json.has("favicon")) {
+                                json.addProperty("favicon", json.get("favicon").getAsString().replace("\n", ""));
+                            }
+                            wrapper.set(Type.STRING, 0, GsonUtil.getGson().toJson(json));
+                        } catch (JsonParseException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+            }
+        });
 
         // New packet 0x04 - Login Plugin Message
 
